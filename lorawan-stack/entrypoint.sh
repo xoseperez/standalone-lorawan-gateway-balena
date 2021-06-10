@@ -73,10 +73,16 @@ EOF
     openssl req -new -key server.key -out server.csr -config csr.conf
     openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 10000 -extfile csr.conf
     
-    cp ca.cert ${CERTIFICATES_FOLDER}/ca.pem
-    cp server.cert ${CERTIFICATES_FOLDER}/cert.pem
+    cp ca.crt ${CERTIFICATES_FOLDER}/ca.pem
+    cp server.crt ${CERTIFICATES_FOLDER}/cert.pem
     cp server.key ${CERTIFICATES_FOLDER}/key.pem
 
+fi
+
+# Init database (TODO: should not be in the certs folder)
+if [ ! -f ${CERTIFICATES_FOLDER}/db.init ]; then
+    ttn-lw-stack -c ${CONFIG_FILE} is-db init
+    touch ${CERTIFICATES_FOLDER}/db.init
 fi
 
 # Run server
