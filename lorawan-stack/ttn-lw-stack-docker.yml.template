@@ -1,0 +1,131 @@
+# Identity Server configuration
+# Email configuration for "{{domain}}"
+is:
+  email:
+    sender-name: '{{server_name}}'
+    sender-address: '{{email}}'
+    network:
+      name: '{{server_name}}'
+      console-url: 'https://{{domain}}/console'
+      identity-server-url: 'https://{{domain}}/oauth'
+
+    provider: {{mail_provider}}
+
+    # If sending email with Sendgrid
+    # provider: sendgrid
+    sendgrid:
+      api-key: '{{sendgrid_key}}'              # enter Sendgrid API key
+
+    # If sending email with SMTP
+    # provider: smtp
+    smtp:
+      address:  '{{smtp_host}}'             # enter SMTP server address
+      username: '{{smtp_user}}'             # enter SMTP server username
+      password: '{{smtp_pass}}'             # enter SMTP server password
+
+  # Web UI configuration for "{{domain}}":
+  oauth:
+    ui:
+      canonical-url: 'https://{{domain}}/oauth'
+      is:
+        base-url: 'https://{{domain}}/api/v3'
+
+# HTTP server configuration
+http:
+  cookie:
+    block-key: '{{block_key}}'                # generate 32 bytes (openssl rand -hex 32)
+    hash-key: '{{hash_key}}'                 # generate 64 bytes (openssl rand -hex 64)
+  metrics:
+    password: '{{metrics_password}}'               # choose a password
+  pprof:
+    password: '{{pprof_password}}'                 # choose a password
+
+# If using custom certificates:
+tls:
+  source: file
+  root-ca: {{certs_folder}}/ca.pem
+  certificate: {{certs_folder}}/cert.pem
+  key: {{certs_folder}}/key.pem
+
+# Let's encrypt for "{{domain}}"
+#tls:
+#  source: 'acme'
+#  acme:
+#    dir: '/var/lib/acme'
+#    email: '{{email}}'
+#    hosts: ['{{domain}}']
+#    default-host: '{{domain}}'
+
+# If Gateway Server enabled, defaults for "{{domain}}":
+gs:
+  mqtt:
+    public-address: '{{domain}}:1882'
+    public-tls-address: '{{domain}}:8882'
+  mqtt-v2:
+    public-address: '{{domain}}:1881'
+    public-tls-address: '{{domain}}:8881'
+
+# If Gateway Configuration Server enabled, defaults for "{{domain}}":
+gcs:
+  basic-station:
+    default:
+      lns-uri: 'wss://{{domain}}:8887'
+  the-things-gateway:
+    default:
+      mqtt-server: 'mqtts://{{domain}}:8881'
+
+# Web UI configuration for "{{domain}}":
+console:
+  ui:
+    canonical-url: 'https://{{domain}}/console'
+    is:
+      base-url: 'https://{{domain}}/api/v3'
+    gs:
+      base-url: 'https://{{domain}}/api/v3'
+    gcs:
+      base-url: 'https://{{domain}}/api/v3'
+    ns:
+      base-url: 'https://{{domain}}/api/v3'
+    as:
+      base-url: 'https://{{domain}}/api/v3'
+    js:
+      base-url: 'https://{{domain}}/api/v3'
+    qrg:
+      base-url: 'https://{{domain}}/api/v3'
+    edtc:
+      base-url: 'https://{{domain}}/api/v3'
+
+  oauth:
+    authorize-url: 'https://{{domain}}/oauth/authorize'
+    token-url: 'https://{{domain}}/oauth/token'
+    logout-url: 'https://{{domain}}/oauth/logout'
+    client-id: 'console'
+    client-secret: 'console'          # choose or generate a secret
+
+# If Application Server enabled, defaults for "{{domain}}":
+as:
+  mqtt:
+    public-address: '{{domain}}:1883'
+    public-tls-address: '{{domain}}:8883'
+  webhooks:
+    downlink:
+      public-address: '{{domain}}:1885/api/v3'
+
+# If Device Claiming Server enabled, defaults for "{{domain}}":
+dcs:
+  oauth:
+    authorize-url: 'https://{{domain}}/oauth/authorize'
+    token-url: 'https://{{domain}}/oauth/token'
+    logout-url: 'https://{{domain}}/oauth/logout'
+    client-id: 'device-claiming'
+    client-secret: 'device-claiming'          # choose or generate a secret
+  ui:
+    canonical-url: 'https://{{domain}}/claim'
+    as:
+      base-url: 'https://{{domain}}/api/v3'
+    dcs:
+      base-url: 'https://{{domain}}/api/v3'
+    is:
+      base-url: 'https://{{domain}}/api/v3'
+    ns:
+      base-url: 'https://{{domain}}/api/v3'
