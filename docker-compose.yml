@@ -42,8 +42,8 @@ services:
   stack:
     build: ./lorawan-stack
     restart: unless-stopped
-    networks:
-      - tts
+    network_mode: host
+    privileged: true
     depends_on:
       - redis
       - postgres
