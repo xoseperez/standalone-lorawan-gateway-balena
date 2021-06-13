@@ -1,0 +1,46 @@
+name: The Things Stack LNS
+type: sw.application
+description: >-
+  Deploys the The Things Stack LoRaWAN Network Server in localhost mode with serlf signed certificates.
+joinable: false
+post-provisioning: >-
+  ## Usage instructions
+  
+  Once the device goes online, you can access to it's LAN IP address, and login using 'admin' as username and 'changeme' as password (unless changed in the environment variables).
+  
+  For detailed instructions on how to use configure your LoRaWAN LNS check the [TTS Getting Started page](https://www.thethingsindustries.com/docs/getting-started/).
+assets:
+  repository:
+    type: blob.asset
+    data:
+      url: 'https://github.com/xoseperez/balena-tts-lns'
+  logo:
+    type: blob.asset
+    data:
+      url: >-
+        https://raw.githubusercontent.com/xoseperez/balena-tts-lns/master/resources/logo_small.png
+data:
+  applicationEnvironmentVariables:
+    - SERVER_NAME: The Things Stack
+    - DOMAIN: thethings.example.com
+    - ADMIN_EMAIL: admin@thethings.example.com
+    - NOREPLY_EMAIL: noreply@thethings.example.com
+    - ADMIN_PASSWORD: changeme
+    - CONSOLE_SECRET: console
+    - DEVICE_CLAIMING_SECRET: device_claiming
+    - METRICS_PASSWORD: metrics
+    - PPROF_PASSWORD: pprof
+    - SMTP_HOST: 
+    - SMTP_USER: 
+    - SMTP_PASS: 
+    - SENDGRID_KEY:
+    - SUBJECT_COUNTRY: ES
+    - SUBJECT_STATE: Catalunya
+    - SUBJECT_LOCATION: Barcelona
+    - SUBJECT_ORGANIZATION: TTN Catalunya
+  defaultDeviceType: raspberrypi3
+  supportedDeviceTypes:
+    - raspberrypi3
+    - raspberrypi3-64
+    - raspberrypi4-64
+    - fincm3

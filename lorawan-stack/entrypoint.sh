@@ -72,7 +72,7 @@ SUBJECT_STATE=${SUBJECT_STATE:-Catalunya}
 SUBJECT_LOCATION=${SUBJECT_LOCATION:-Barcelona}
 SUBJECT_ORGANIZATION=${SUBJECT_ORGANIZATION:-TTN Catalunya}
 EXPECTED_SIGNATURE="/C=$SUBJECT_COUNTRY/ST=$SUBJECT_STATE/L=$SUBJECT_LOCATION/O=$SUBJECT_ORGANIZATION"
-CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/signature)
+CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/certificates_signature)
 
 if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
@@ -93,33 +93,41 @@ if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
     cp server.key ${DATA_FOLDER}/key.pem
     cp server.crt ${DATA_FOLDER}/cert.pem
 
-    echo $EXPECTED_SIGNATURE > ${DATA_FOLDER}/signature
+    echo $EXPECTED_SIGNATURE > ${DATA_FOLDER}/certificates_signature
 
 fi
 
 # Initialization
-ttn-lw-stack -c ${CONFIG_FILE} is-db init
-ttn-lw-stack -c ${CONFIG_FILE} is-db create-admin-user \
-    --id admin \
-    --email "${ADMIN_EMAIL}" \
-    --password "${ADMIN_PASSWORD}"
-ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
-    --id cli \
-    --name "Command Line Interface" \
-    --owner admin \
-    --no-secret \
-    --redirect-uri "local-callback" \
-    --redirect-uri "code"
+EXPECTED_SIGNATURE="$ADMIN_EMAIL $ADMIN_PASSWORD $CONSOLE_SECRET $DOMAIN"
+CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/database_signature)
+if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
-ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
-    --id console \
-    --name "Console" \
-    --owner admin \
-    --secret "${CONSOLE_SECRET}" \
-    --redirect-uri "https://${DOMAIN}/console/oauth/callback" \
-    --redirect-uri "/console/oauth/callback" \
-    --logout-redirect-uri "https://${DOMAIN}/console" \
-    --logout-redirect-uri "/console"
+    ttn-lw-stack -c ${CONFIG_FILE} is-db init
+    ttn-lw-stack -c ${CONFIG_FILE} is-db create-admin-user \
+        --id admin \
+        --email "${ADMIN_EMAIL}" \
+        --password "${ADMIN_PASSWORD}"
+    ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
+        --id cli \
+        --name "Command Line Interface" \
+        --owner admin \
+        --no-secret \
+        --redirect-uri "local-callback" \
+        --redirect-uri "code"
+
+    ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
+        --id console \
+        --name "Console" \
+        --owner admin \
+        --secret "${CONSOLE_SECRET}" \
+        --redirect-uri "https://${DOMAIN}/console/oauth/callback" \
+        --redirect-uri "/console/oauth/callback" \
+        --logout-redirect-uri "https://${DOMAIN}/console" \
+        --logout-redirect-uri "/console"
+
+    echo $EXPECTED_SIGNATURE > ${DATA_FOLDER}/database_signature
+
+fi
 
 # Run server
 ttn-lw-stack -c ${CONFIG_FILE} start
