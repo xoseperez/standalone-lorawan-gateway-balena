@@ -3,7 +3,7 @@
 is:
   email:
     sender-name: '{{server_name}}'
-    sender-address: '{{email}}'
+    sender-address: '{{noreply_email}}'
     network:
       name: '{{server_name}}'
       console-url: 'https://{{domain}}/console'
@@ -14,14 +14,14 @@ is:
     # If sending email with Sendgrid
     # provider: sendgrid
     sendgrid:
-      api-key: '{{sendgrid_key}}'              # enter Sendgrid API key
+      api-key: '{{sendgrid_key}}'
 
     # If sending email with SMTP
     # provider: smtp
     smtp:
-      address:  '{{smtp_host}}'             # enter SMTP server address
-      username: '{{smtp_user}}'             # enter SMTP server username
-      password: '{{smtp_pass}}'             # enter SMTP server password
+      address:  '{{smtp_host}}'
+      username: '{{smtp_user}}'
+      password: '{{smtp_pass}}'
 
   # Web UI configuration for "{{domain}}":
   oauth:
@@ -33,26 +33,26 @@ is:
 # HTTP server configuration
 http:
   cookie:
-    block-key: '{{block_key}}'                # generate 32 bytes (openssl rand -hex 32)
-    hash-key: '{{hash_key}}'                 # generate 64 bytes (openssl rand -hex 64)
+    block-key: '{{block_key}}'
+    hash-key: '{{hash_key}}'
   metrics:
-    password: '{{metrics_password}}'               # choose a password
+    password: '{{metrics_password}}'
   pprof:
-    password: '{{pprof_password}}'                 # choose a password
+    password: '{{pprof_password}}'
 
 # If using custom certificates:
 tls:
   source: file
-  root-ca: {{certs_folder}}/ca.pem
-  certificate: {{certs_folder}}/cert.pem
-  key: {{certs_folder}}/key.pem
+  root-ca: {{data_folder}}/ca.pem
+  certificate: {{data_folder}}/cert.pem
+  key: {{data_folder}}/key.pem
 
 # Let's encrypt for "{{domain}}"
 #tls:
 #  source: 'acme'
 #  acme:
 #    dir: '/var/lib/acme'
-#    email: '{{email}}'
+#    email: '{{admin_email}}'
 #    hosts: ['{{domain}}']
 #    default-host: '{{domain}}'
 
@@ -100,7 +100,7 @@ console:
     token-url: 'https://{{domain}}/oauth/token'
     logout-url: 'https://{{domain}}/oauth/logout'
     client-id: 'console'
-    client-secret: 'console'          # choose or generate a secret
+    client-secret: '{{console_secret}}'
 
 # If Application Server enabled, defaults for "{{domain}}":
 as:
@@ -118,7 +118,7 @@ dcs:
     token-url: 'https://{{domain}}/oauth/token'
     logout-url: 'https://{{domain}}/oauth/logout'
     client-id: 'device-claiming'
-    client-secret: 'device-claiming'          # choose or generate a secret
+    client-secret: '{{device_claiming_secret}}'
   ui:
     canonical-url: 'https://{{domain}}/claim'
     as:

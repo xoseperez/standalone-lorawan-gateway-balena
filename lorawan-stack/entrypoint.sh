@@ -1,28 +1,58 @@
 #!/bin/sh
 
+# Get IPs
+if [ "$BALENA_DEVICE_UUID" != "" ]; then
+
+IP_LAN=$(curl -sX GET "https://api.balena-cloud.com/v5/device?\$filter=uuid%20eq%20'$BALENA_DEVICE_UUID'" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer $BALENA_API_KEY" | \
+jq ".d | .[0] | .ip_address" | sed 's/"//g')
+
+IP_WAN=$(curl -sX GET "https://api.balena-cloud.com/v5/device?\$filter=uuid%20eq%20'$BALENA_DEVICE_UUID'" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer $BALENA_API_KEY" | \
+jq ".d | .[0] | .public_address" | sed 's/"//g')
+
+else
+
+#IP_LAN=${IP_LAN:-$(hostname -i)}
+IP_ETH0=$(ip a s eth0 | egrep -o 'inet [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d' ' -f2)
+IP_WLAN0=$(ip a s wlan0 | egrep -o 'inet [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d' ' -f2)
+IP_LAN=${IP_LAN:-$(echo "${IP_ETH0} ${IP_WLAN0}" | sed 's/ \s*/ /g' | sed 's/^ *//g' | sed 's/ *$//g')}
+IP_WAN=${IP_WAN:-$(wget -q -O - ipinfo.io/ip)}
+
+fi 
+
 # Get configuration
 CONFIG_FILE=/home/thethings/ttn-lw-stack-docker.yml
-CERTIFICATES_FOLDER=/srv/certificates
-CERTIFICATES_FOLDER_ESC=$(echo "${CERTIFICATES_FOLDER}" | sed 's/\//\\\//g')
+DATA_FOLDER=/srv/data
+DATA_FOLDER_ESC=$(echo "${DATA_FOLDER}" | sed 's/\//\\\//g')
+
 SERVER_NAME=${SERVER_NAME:-The Things Stack}
-EMAIL=${EMAIL:-noreply@thethings.example.com}
-DOMAIN=${DOMAIN:-thethings.example.com}
+DOMAIN=${DOMAIN:-${IP_LAN% *}}
+ADMIN_EMAIL=${ADMIN_EMAIL:-admin@thethings.example.com}
+NOREPLY_EMAIL=${NOREPLY_EMAIL:-noreply@thethings.example.com}
+
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+CONSOLE_SECRET=${CONSOLE_SECRET:-console}
+DEVICE_CLAIMING_SECRET=${DEVICE_CLAIMING_SECRET:-device_claiming}
+METRICS_PASSWORD=${METRICS_PASSWORD:-metrics}
+PPROF_PASSWORD=${PPROF_PASSWORD:-pprof}
+
+BLOCK_KEY=$(openssl rand -hex 32)
+HASH_KEY=$(openssl rand -hex 64)
 if [ ! $SMTP_HOST == "" ]; then
     MAIL_PROVIDER="smtp"
 else
     MAIL_PROVIDER="sendgrid"
 fi
-BLOCK_KEY=$(openssl rand -hex 32)
-HASH_KEY=$(openssl rand -hex 64)
-IP_ETH0=$(ip a s eth0 | egrep -o 'inet [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d' ' -f2)
-IP_WLAN0=$(ip a s wlan0 | egrep -o 'inet [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d' ' -f2)
-[ "$IP_WLAN0" == "" ] && IP_WLAN0=$IP_ETH0
-[ "$IP_ETH0" == "" ] && IP_ETH0=$IP_WLAN0
 
 # Build config file
 cp ${CONFIG_FILE}.template ${CONFIG_FILE}
 sed -i -e "s/{{server_name}}/${SERVER_NAME}/g" $CONFIG_FILE
-sed -i -e "s/{{email}}/${EMAIL}/g" $CONFIG_FILE
+sed -i -e "s/{{admin_email}}/${ADMIN_EMAIL}/g" $CONFIG_FILE
+sed -i -e "s/{{noreply_email}}/${NOREPLY_EMAIL}/g" $CONFIG_FILE
+sed -i -e "s/{{console_secret}}/${CONSOLE_SECRET}/g" $CONFIG_FILE
 sed -i -e "s/{{domain}}/${DOMAIN}/g" $CONFIG_FILE
 sed -i -e "s/{{mail_provider}}/${MAIL_PROVIDER}/g" $CONFIG_FILE
 sed -i -e "s/{{sendgrid_key}}/${SENDGRID_KEY}/g" $CONFIG_FILE
@@ -33,57 +63,63 @@ sed -i -e "s/{{block_key}}/${BLOCK_KEY}/g" $CONFIG_FILE
 sed -i -e "s/{{hash_key}}/${HASH_KEY}/g" $CONFIG_FILE
 sed -i -e "s/{{metrics_password}}/${METRICS_PASSWORD}/g" $CONFIG_FILE
 sed -i -e "s/{{pprof_password}}/${PPROF_PASSWORD}/g" $CONFIG_FILE
-sed -i -e "s/{{certs_folder}}/${CERTIFICATES_FOLDER_ESC}/g" $CONFIG_FILE
+sed -i -e "s/{{device_claiming_secret}}/${DEVICE_CLAIMING_SECRET}/g" $CONFIG_FILE
+sed -i -e "s/{{data_folder}}/${DATA_FOLDER_ESC}/g" $CONFIG_FILE
 
-# Certificates
-if [ ! -f ${CERTIFICATES_FOLDER}/ca.pem ]; then
+# Certificates are rebuild on subject change
+SUBJECT_COUNTRY=${SUBJECT_COUNTRY:-ES}
+SUBJECT_STATE=${SUBJECT_STATE:-Catalunya}
+SUBJECT_LOCATION=${SUBJECT_LOCATION:-Barcelona}
+SUBJECT_ORGANIZATION=${SUBJECT_ORGANIZATION:-TTN Catalunya}
+EXPECTED_SIGNATURE="/C=$SUBJECT_COUNTRY/ST=$SUBJECT_STATE/L=$SUBJECT_LOCATION/O=$SUBJECT_ORGANIZATION"
+CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/signature)
+
+if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
     cd /tmp
-    openssl genrsa -out ca.key 2048
-    openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 -out ca.crt -batch
-    openssl genrsa -out server.key 2048
-
-    cat > csr.conf << EOF
-[ req ]
-default_bits = 2048
-prompt = no
-default_md = sha256
-req_extensions = req_ext
-distinguished_name = dn
-
-[ dn ]
-C = ES
-ST = Catalunya
-L = Barcelona
-O = Balena
-OU = BalenaLabs
-CN = balena.io
-
-[ req_ext ]
-subjectAltName = @alt_names
-
-[ alt_names ]
-DNS.1 = balena
-DNS.2 = balena.io
-IP.1 = ${IP_ETH0}
-IP.2 = ${IP_WLAN0}
-
-EOF
-
-    openssl req -new -key server.key -out server.csr -config csr.conf
-    openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 10000 -extfile csr.conf
     
-    cp ca.crt ${CERTIFICATES_FOLDER}/ca.pem
-    cp server.crt ${CERTIFICATES_FOLDER}/cert.pem
-    cp server.key ${CERTIFICATES_FOLDER}/key.pem
+    openssl req -nodes -x509 -newkey rsa:2048 -keyout ca.key -out ca.crt -subj "$EXPECTED_SIGNATURE"
+    cat ca.key ca.crt > ca.pem
+
+    openssl req -nodes -newkey rsa:2048 -keyout server.key -out server.csr -subj "$EXPECTED_SIGNATURE"
+    openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
+    cat server.key server.crt > server.pem
+
+    openssl req -nodes -newkey rsa:2048 -keyout client.key -out client.csr -subj "$EXPECTED_SIGNATURE"
+    openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAserial ca.srl -out client.crt
+    cat client.key client.crt > client.pem
+
+    cp ca.crt ${DATA_FOLDER}/ca.pem
+    cp server.key ${DATA_FOLDER}/key.pem
+    cp server.crt ${DATA_FOLDER}/cert.pem
+
+    echo $EXPECTED_SIGNATURE > ${DATA_FOLDER}/signature
 
 fi
 
-# Init database (TODO: should not be in the certs folder)
-if [ ! -f ${CERTIFICATES_FOLDER}/db.init ]; then
-    ttn-lw-stack -c ${CONFIG_FILE} is-db init
-    touch ${CERTIFICATES_FOLDER}/db.init
-fi
+# Initialization
+ttn-lw-stack -c ${CONFIG_FILE} is-db init
+ttn-lw-stack -c ${CONFIG_FILE} is-db create-admin-user \
+    --id admin \
+    --email "${ADMIN_EMAIL}" \
+    --password "${ADMIN_PASSWORD}"
+ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
+    --id cli \
+    --name "Command Line Interface" \
+    --owner admin \
+    --no-secret \
+    --redirect-uri "local-callback" \
+    --redirect-uri "code"
+
+ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
+    --id console \
+    --name "Console" \
+    --owner admin \
+    --secret "${CONSOLE_SECRET}" \
+    --redirect-uri "https://${DOMAIN}/console/oauth/callback" \
+    --redirect-uri "/console/oauth/callback" \
+    --logout-redirect-uri "https://${DOMAIN}/console" \
+    --logout-redirect-uri "/console"
 
 # Run server
 ttn-lw-stack -c ${CONFIG_FILE} start

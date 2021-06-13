@@ -1,18 +1,18 @@
 FROM thethingsnetwork/lorawan-stack:3.13.1-armv7
 
 USER root:root
-RUN apk --update --no-cache add openssl
+RUN apk --update --no-cache add openssl jq
 
-RUN mkdir /srv/certificates
-RUN chmod 777 /srv/certificates
-VOLUME [ "/srv/certificates" ]
+RUN mkdir /srv/data
+RUN chmod 777 /srv/data
+VOLUME [ "/srv/data" ]
 
 COPY ttn-lw-stack-docker.yml.template /home/thethings/ttn-lw-stack-docker.yml.template
 COPY entrypoint.sh /home/thethings/entrypoint.sh
 RUN chown thethings:thethings /home/thethings/*
 RUN chmod +x /home/thethings/entrypoint.sh
 
-#ENTRYPOINT [ "/home/thethings/entrypoint.sh" ]
-ENTRYPOINT [ "sleep", "infinity" ]
+ENTRYPOINT [ "/home/thethings/entrypoint.sh" ]
+#ENTRYPOINT [ "sleep", "3600" ]
 
 USER thethings:thethings
