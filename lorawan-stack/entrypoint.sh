@@ -71,27 +71,22 @@ SUBJECT_COUNTRY=${SUBJECT_COUNTRY:-ES}
 SUBJECT_STATE=${SUBJECT_STATE:-Catalunya}
 SUBJECT_LOCATION=${SUBJECT_LOCATION:-Barcelona}
 SUBJECT_ORGANIZATION=${SUBJECT_ORGANIZATION:-TTN Catalunya}
-EXPECTED_SIGNATURE="/C=$SUBJECT_COUNTRY/ST=$SUBJECT_STATE/L=$SUBJECT_LOCATION/O=$SUBJECT_ORGANIZATION"
+EXPECTED_SIGNATURE="$SUBJECT_COUNTRY $SUBJECT_STATE $SUBJECT_LOCATION $SUBJECT_ORGANIZATION $DOMAIN"
 CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/certificates_signature)
 
 if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
     cd /tmp
     
-    openssl req -nodes -x509 -newkey rsa:2048 -keyout ca.key -out ca.crt -subj "$EXPECTED_SIGNATURE"
-    cat ca.key ca.crt > ca.pem
+    echo "{\"names\":[{\"C\":\"$SUBJECT_COUNTRY\",\"ST\":\"$SUBJECT_STATE\",\"L\":\"$SUBJECT_LOCATION\",\"O\":\"$SUBJECT_ORGANIZATION\"}]}" > ca.json
+    cfssl genkey -initca ca.json | cfssljson -bare ca
 
-    openssl req -nodes -newkey rsa:2048 -keyout server.key -out server.csr -subj "$EXPECTED_SIGNATURE"
-    openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
-    cat server.key server.crt > server.pem
+    echo "{\"hosts\":[\"$DOMAIN\"],\"names\":[{\"C\":\"$SUBJECT_COUNTRY\",\"ST\":\"$SUBJECT_STATE\",\"L\":\"$SUBJECT_LOCATION\",\"O\":\"$SUBJECT_ORGANIZATION\"}]}" > cert.json
+    cfssl gencert -ca ca.pem -ca-key ca-key.pem cert.json | cfssljson -bare cert
 
-    openssl req -nodes -newkey rsa:2048 -keyout client.key -out client.csr -subj "$EXPECTED_SIGNATURE"
-    openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAserial ca.srl -out client.crt
-    cat client.key client.crt > client.pem
-
-    cp ca.crt ${DATA_FOLDER}/ca.pem
-    cp server.key ${DATA_FOLDER}/key.pem
-    cp server.crt ${DATA_FOLDER}/cert.pem
+    cp ca.pem ${DATA_FOLDER}/ca.pem
+    cp cert-key.pem ${DATA_FOLDER}/key.pem
+    cp cert.pem ${DATA_FOLDER}/cert.pem
 
     echo $EXPECTED_SIGNATURE > ${DATA_FOLDER}/certificates_signature
 
