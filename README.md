@@ -2,6 +2,8 @@
 
 This project deploys the The Things Stack LoRaWAN Network Server (Open Source Edition) with balena. It runs on a Raspberry Pi (3/4) or balenaFin.
 
+This is a Work In Progress. It should work just fine for local (LAN) deployments, still needs a lot of testing for other environments.
+
 ## Getting started
 
 ### Hardware
@@ -75,6 +77,43 @@ Variable Name | Value | Description | Default
 **SUBJECT_LOCATION** | `STRING` | Self Certificate city | Barcelona
 **SUBJECT_ORGANIZATION** | `STRING` | Self Certificate organization | TTN Catalunya
 
+
+### Add more services
+
+We can merge this project with a BasicStation in the same device. Submodules for the following projects are defined:
+
+* BalenaLabs BasicStation
+* WiFi-Connect
+
+To check them out just run after cloning the repo:
+
+```
+git module init
+```
+
+Finally uncomment the corresponding section on the `docker-compose.yml` file and do a `balena push <application-name>` (see deploy via Balena CLI above).
+Check each project documentation to properly configure them.
+
+## Troubleshooting
+
+* Self certificates are not working along with BasicStation unless the device has a domain. Give your Pi a static address and use a local DNS to add a domain pointing to it. Use it in the DOMAIN and TC_URI (for the Balena BasicStation project). Unless the domain definition is available at Google DNS services, you will have to define the DNS Server in the `/mnt/boot/config.json` of the device (not the container, see https://www.balena.io/docs/reference/OS/configuration/#dnsservers).
+
+You can also do it using the Balena CLI on the OS image before burning it to the SD card (you might require sudo, select the drive and DNS server, also type of image):
+
+```
+balena config write --type raspberrypi4-64 --drive <downloaded.img> dnsServers "<dns_server>"
+```
+
+## TODO
+
+* Lots of testing :)
+* Testing performance on different platforms
+* Option to use ACME / Let's Encrypt for valid certificates
+* Option to configure a connection to the Packet Broker
+* Include services to handle a LoRaWAN concentrator
+  * Using UDP packet forwarder (currently only comaptible with SX1301 concentrators)
+  * Using BasicStation (see troubleshooting section above)
+* Check certificate trust on CLI
 
 ## Attribution
 

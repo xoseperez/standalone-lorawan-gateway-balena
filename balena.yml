@@ -22,7 +22,7 @@ assets:
 data:
   applicationEnvironmentVariables:
     - SERVER_NAME: The Things Stack
-    - DOMAIN: thethings.example.com
+    - DOMAIN: 
     - ADMIN_EMAIL: admin@thethings.example.com
     - NOREPLY_EMAIL: noreply@thethings.example.com
     - ADMIN_PASSWORD: changeme
