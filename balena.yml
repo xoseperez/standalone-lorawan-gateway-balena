@@ -18,7 +18,7 @@ assets:
     type: blob.asset
     data:
       url: >-
-        https://github.com/xoseperez/balena-tts-lns/master/resources/logo_small.png
+        https://raw.githubusercontent.com/xoseperez/balena-tts-lns/master/resources/logo_small.png
 data:
   applicationEnvironmentVariables:
     - TTS_SERVER_NAME: The Things Stack

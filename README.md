@@ -60,9 +60,16 @@ Database is reset if TTS_DOMAIN, TTS_ADMIN_EMAIL, TTS_ADMIN_PASSWORD or TTS_CONS
 
 ### Configuring the TTS_DOMAIN
 
-In order to connect from a gateway service (even in the same device) with a BasicStation protocol you will need a proper domain name to generate the certificates. If you don't care about secure connections then using the LAN IP of the device as TTS_DOMAIN will work just fine. Anyway, **the service wont start until a TTS_DOMAIN is defined** for the device.
+In order to connect from a gateway service (even in the same device) with a BasicStation protocol you will need a proper domain name to generate the certificates. If you don't care about secure connections then using the LAN IP of the device as TTS_DOMAIN will work just fine. Anyway, **the service won't start until a TTS_DOMAIN is defined** for the device.
 
-There are a number of ways to define a domain name pointing to the device IP. 
+To properly configure a domain or subdomain you will have to configure the Raspberry Pi with a static address. You have two options here:
+
+1. Configure a static lease on your home router linking the RPi MAC with an IP. Everytime the RPi boots it will ask for an IP using DHCP (this is the default) and router will allways gfive it the same IP.
+
+2. Configure a static IP on the RPi itself instead of using DHCP. Check the [Balena OS documentation](https://www.balena.io/docs/reference/OS/network/2.x/#setting-a-static-ip) to know how to do this, but it has to be done once the initial BalenaOS image boots.
+
+
+Once you know the PI will always be accessible at the same IP, there are a number of ways to define a domain name pointing to the device IP. 
 
 1. Defining it in the `/etc/hosts` of the device host (BalenaOS). It will work but only for services in the same machine. Open a terminal to the host and add the line as below (replacing the domain name):
 
@@ -70,7 +77,7 @@ There are a number of ways to define a domain name pointing to the device IP.
 echo "127.0.0.1 lns.ttn.cat" >> /etc/hosts
 ```
 
-2. Using a DNS in your LAN, like PiHole, dnsmask,... these will work great inside your LAN. But this require an extra step since BalenaOS by default uses Google DNS servers (8.8.8.8). So you have to instruct it to use your local DNS server instead. You can do that by editing the `/mnt/boot/config.json` file in the Host adding this line (change the IP to match that of your DNS server):
+2. Using a DNS in your LAN, like PiHole, dnsmask,... these will work great inside your LAN. But this option requires an extra step since BalenaOS by default uses Google DNS servers (8.8.8.8). So you have to instruct it to use your local DNS server instead. You can do that by editing the `/mnt/boot/config.json` file in the Host adding this line (change the IP to match that of your DNS server):
 
 ```
 "dnsServers": "192.168.1.11"
@@ -81,6 +88,8 @@ You can also do it using the Balena CLI on the BalenaOS image you download. Some
 ```
 balena config write --type raspberrypi4-64 --drive <downloaded.img> dnsServers "<dns_server>"
 ```
+
+Also note that if you are using the static IP aproximation above, the DNSs are configured on the same connection file, change them there.
 
 3. Using a third party service, like Cloudflare, for instance. If you are managing a domain from such a service you can just add an A register for a subdomain pointing to your local (or public) IP address.
 
