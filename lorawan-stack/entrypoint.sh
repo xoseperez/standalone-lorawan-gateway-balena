@@ -43,8 +43,9 @@ fi
 # Check configuration
 if [ "$TTS_DOMAIN" == "" ]
 then
-    echo -e "\033[91mERROR: Missing configuration, define TTS_DOMAIN variable.\033[0m"
-	sleep infinity
+    curl -X PATCH --header "Content-Type:application/json" \
+    	--data '{"network": {"hostname": "balena"}}' \
+	"$BALENA_SUPERVISOR_ADDRESS/v1/device/host-config?apikey=$BALENA_SUPERVISOR_API_KEY"
 fi
 
 # Get configuration
