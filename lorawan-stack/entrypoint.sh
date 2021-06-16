@@ -1,67 +1,70 @@
 #!/bin/sh
 
-# Get service coonfiguration
-RESPONSE=$(curl -sX GET "https://api.balena-cloud.com/v6/device?\$filter=uuid%20eq%20'$BALENA_DEVICE_UUID'" \
--H "Content-Type: application/json" \
--H "Authorization: Bearer $BALENA_API_KEY")
-BALENA_ID=$(echo $RESPONSE | jq ".d | .[0] | .id")
-IP_LAN=$(echo $RESPONSE | jq ".d | .[0] | .ip_address" | sed 's/"//g')
-IP_WAN=$(echo $RESPONSE | jq ".d | .[0] | .public_address" | sed 's/"//g')
+if [ "$BALENA_DEVICE_UUID" != "" ]; then
 
-# Utility function to create or update a device environment variables
-balena_set_variable() {
-    
-    NAME=$1
-    VALUE=$2
-    
-    ID=$(curl -sX GET "https://api.balena-cloud.com/v6/device_environment_variable" -H "Content-Type: application/json" -H "Authorization: Bearer $BALENA_API_KEY" | jq '.d | .[] | select(.name == "'$NAME'") | .id')
-    
-    if [ "$ID" == "" ]; then
+    # Get service coonfiguration
+    RESPONSE=$(curl -sX GET "https://api.balena-cloud.com/v6/device?\$filter=uuid%20eq%20'$BALENA_DEVICE_UUID'" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $BALENA_API_KEY")
+    BALENA_ID=$(echo $RESPONSE | jq ".d | .[0] | .id")
+    IP_LAN=$(echo $RESPONSE | jq ".d | .[0] | .ip_address" | sed 's/"//g')
+    IP_WAN=$(echo $RESPONSE | jq ".d | .[0] | .public_address" | sed 's/"//g')
 
-        curl -sX POST \
-            "https://api.balena-cloud.com/v6/device_environment_variable" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $BALENA_API_KEY" \
-            --data "{\"device\": \"$BALENA_ID\",\"name\": \"$NAME\",\"value\": \"$VALUE\"}" 2> /dev/null
+    # Utility function to create or update a device environment variables
+    balena_set_variable() {
+        
+        NAME=$1
+        VALUE=$2
+        
+        ID=$(curl -sX GET "https://api.balena-cloud.com/v6/device_environment_variable" -H "Content-Type: application/json" -H "Authorization: Bearer $BALENA_API_KEY" | jq '.d | .[] | select(.name == "'$NAME'") | .id')
+        
+        if [ "$ID" == "" ]; then
 
-    else
+            curl -sX POST \
+                "https://api.balena-cloud.com/v6/device_environment_variable" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $BALENA_API_KEY" \
+                --data "{\"device\": \"$BALENA_ID\",\"name\": \"$NAME\",\"value\": \"$VALUE\"}" 2> /dev/null
 
-        curl -X PATCH \
-            "https://api.balena-cloud.com/v6/device_environment_variable($ID)" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $BALENA_API_KEY" \
-            --data "{\"value\": \"$VALUE\"}" 2> /dev/null
+        else
 
-    fi
+            curl -X PATCH \
+                "https://api.balena-cloud.com/v6/device_environment_variable($ID)" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $BALENA_API_KEY" \
+                --data "{\"value\": \"$VALUE\"}" 2> /dev/null
 
-}
+        fi
+
+    }
+
+fi
 
 # Check configuration
-if [ "$DOMAIN" == "" ]
+if [ "$TTS_DOMAIN" == "" ]
 then
-    echo -e "\033[91mERROR: Missing configuration, define DOMAIN variable.\033[0m"
+    echo -e "\033[91mERROR: Missing configuration, define TTS_DOMAIN variable.\033[0m"
 	sleep infinity
 fi
 
 # Get configuration
 CONFIG_FILE=/home/thethings/ttn-lw-stack-docker.yml
 DATA_FOLDER=/srv/data
+
+TTS_SERVER_NAME=${TTS_SERVER_NAME:-The Things Stack}
+TTS_ADMIN_EMAIL=${TTS_ADMIN_EMAIL:-admin@thethings.example.com}
+TTS_NOREPLY_EMAIL=${TTS_NOREPLY_EMAIL:-noreply@thethings.example.com}
+TTS_ADMIN_PASSWORD=${TTS_ADMIN_PASSWORD:-changeme}
+TTS_CONSOLE_SECRET=${TTS_CONSOLE_SECRET:-console}
+TTS_DEVICE_CLAIMING_SECRET=${TTS_DEVICE_CLAIMING_SECRET:-device_claiming}
+TTS_METRICS_PASSWORD=${TTS_METRICS_PASSWORD:-metrics}
+TTS_PPROF_PASSWORD=${TTS_PPROF_PASSWORD:-pprof}
+
 DATA_FOLDER_ESC=$(echo "${DATA_FOLDER}" | sed 's/\//\\\//g')
-
-SERVER_NAME=${SERVER_NAME:-The Things Stack}
 IP_LAN=$(echo $IP_LAN | sed 's/ /,/g')
-ADMIN_EMAIL=${ADMIN_EMAIL:-admin@thethings.example.com}
-NOREPLY_EMAIL=${NOREPLY_EMAIL:-noreply@thethings.example.com}
-
-ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
-CONSOLE_SECRET=${CONSOLE_SECRET:-console}
-DEVICE_CLAIMING_SECRET=${DEVICE_CLAIMING_SECRET:-device_claiming}
-METRICS_PASSWORD=${METRICS_PASSWORD:-metrics}
-PPROF_PASSWORD=${PPROF_PASSWORD:-pprof}
-
 BLOCK_KEY=$(openssl rand -hex 32)
 HASH_KEY=$(openssl rand -hex 64)
-if [ ! $SMTP_HOST == "" ]; then
+if [ ! $TTS_SMTP_HOST == "" ]; then
     MAIL_PROVIDER="smtp"
 else
     MAIL_PROVIDER="sendgrid"
@@ -69,40 +72,40 @@ fi
 
 # Build config file
 cp ${CONFIG_FILE}.template ${CONFIG_FILE}
-sed -i -e "s/{{server_name}}/${SERVER_NAME}/g" $CONFIG_FILE
-sed -i -e "s/{{admin_email}}/${ADMIN_EMAIL}/g" $CONFIG_FILE
-sed -i -e "s/{{noreply_email}}/${NOREPLY_EMAIL}/g" $CONFIG_FILE
-sed -i -e "s/{{console_secret}}/${CONSOLE_SECRET}/g" $CONFIG_FILE
-sed -i -e "s/{{domain}}/${DOMAIN}/g" $CONFIG_FILE
+sed -i -e "s/{{server_name}}/${TTS_SERVER_NAME}/g" $CONFIG_FILE
+sed -i -e "s/{{admin_email}}/${TTS_ADMIN_EMAIL}/g" $CONFIG_FILE
+sed -i -e "s/{{noreply_email}}/${TTS_NOREPLY_EMAIL}/g" $CONFIG_FILE
+sed -i -e "s/{{console_secret}}/${TTS_CONSOLE_SECRET}/g" $CONFIG_FILE
+sed -i -e "s/{{domain}}/${TTS_DOMAIN}/g" $CONFIG_FILE
 sed -i -e "s/{{mail_provider}}/${MAIL_PROVIDER}/g" $CONFIG_FILE
-sed -i -e "s/{{sendgrid_key}}/${SENDGRID_KEY}/g" $CONFIG_FILE
-sed -i -e "s/{{smtp_host}}/${SMTP_HOST}/g" $CONFIG_FILE
-sed -i -e "s/{{smtp_user}}/${SMTP_USER}/g" $CONFIG_FILE
-sed -i -e "s/{{smtp_pass}}/${SMTP_PASS}/g" $CONFIG_FILE
+sed -i -e "s/{{sendgrid_key}}/${TTS_SENDGRID_KEY}/g" $CONFIG_FILE
+sed -i -e "s/{{smtp_host}}/${TTS_SMTP_HOST}/g" $CONFIG_FILE
+sed -i -e "s/{{smtp_user}}/${TTS_SMTP_USER}/g" $CONFIG_FILE
+sed -i -e "s/{{smtp_pass}}/${TTS_SMTP_PASS}/g" $CONFIG_FILE
 sed -i -e "s/{{block_key}}/${BLOCK_KEY}/g" $CONFIG_FILE
 sed -i -e "s/{{hash_key}}/${HASH_KEY}/g" $CONFIG_FILE
-sed -i -e "s/{{metrics_password}}/${METRICS_PASSWORD}/g" $CONFIG_FILE
-sed -i -e "s/{{pprof_password}}/${PPROF_PASSWORD}/g" $CONFIG_FILE
-sed -i -e "s/{{device_claiming_secret}}/${DEVICE_CLAIMING_SECRET}/g" $CONFIG_FILE
+sed -i -e "s/{{metrics_password}}/${TTS_METRICS_PASSWORD}/g" $CONFIG_FILE
+sed -i -e "s/{{pprof_password}}/${TTS_PPROF_PASSWORD}/g" $CONFIG_FILE
+sed -i -e "s/{{device_claiming_secret}}/${TTS_DEVICE_CLAIMING_SECRET}/g" $CONFIG_FILE
 sed -i -e "s/{{data_folder}}/${DATA_FOLDER_ESC}/g" $CONFIG_FILE
 
 # Certificates are rebuild on subject change
-SUBJECT_COUNTRY=${SUBJECT_COUNTRY:-ES}
-SUBJECT_STATE=${SUBJECT_STATE:-Catalunya}
-SUBJECT_LOCATION=${SUBJECT_LOCATION:-Barcelona}
-SUBJECT_ORGANIZATION=${SUBJECT_ORGANIZATION:-TTN Catalunya}
-EXPECTED_SIGNATURE="$SUBJECT_COUNTRY $SUBJECT_STATE $SUBJECT_LOCATION $SUBJECT_ORGANIZATION $DOMAIN"
+TTS_SUBJECT_COUNTRY=${TTS_SUBJECT_COUNTRY:-ES}
+TTS_SUBJECT_STATE=${TTS_SUBJECT_STATE:-Catalunya}
+TTS_SUBJECT_LOCATION=${TTS_SUBJECT_LOCATION:-Barcelona}
+TTS_SUBJECT_ORGANIZATION=${TTS_SUBJECT_ORGANIZATION:-TTN Catalunya}
+EXPECTED_SIGNATURE="$TTS_SUBJECT_COUNTRY $TTS_SUBJECT_STATE $TTS_SUBJECT_LOCATION $TTS_SUBJECT_ORGANIZATION $TTS_DOMAIN"
 CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/certificates_signature 2> /dev/null)
 
 if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
     cd /tmp
     
-    echo '{"CN":"'$SUBJECT_ORGANIZATION CA'","key":{"algo":"rsa","size":2048},"names":[{"C":"'$SUBJECT_COUNTRY'","ST":"'$SUBJECT_STATE'","L":"'$SUBJECT_LOCATION'","O":"'$SUBJECT_ORGANIZATION'"}]}' > ca.json
+    echo '{"CN":"'$TTS_SUBJECT_ORGANIZATION CA'","key":{"algo":"rsa","size":2048},"names":[{"C":"'$TTS_SUBJECT_COUNTRY'","ST":"'$TTS_SUBJECT_STATE'","L":"'$TTS_SUBJECT_LOCATION'","O":"'$TTS_SUBJECT_ORGANIZATION'"}]}' > ca.json
     cfssl genkey -initca ca.json | cfssljson -bare ca
 
-    echo '{"CN":"'$DOMAIN'","hosts":["'$DOMAIN'","'$(echo $IP_LAN | sed 's/,/\",\"/')'"],"key":{"algo":"rsa","size":2048},"names":[{"C":"'$SUBJECT_COUNTRY'","ST":"'$SUBJECT_STATE'","L":"'$SUBJECT_LOCATION'","O":"'$SUBJECT_ORGANIZATION'"}]}' > cert.json
-    cfssl gencert -hostname "$DOMAIN,$IP_LAN,$IP_WAN" -ca ca.pem -ca-key ca-key.pem cert.json | cfssljson -bare cert
+    echo '{"CN":"'$TTS_DOMAIN'","hosts":["'$TTS_DOMAIN'","'$(echo $IP_LAN | sed 's/,/\",\"/')'"],"key":{"algo":"rsa","size":2048},"names":[{"C":"'$TTS_SUBJECT_COUNTRY'","ST":"'$TTS_SUBJECT_STATE'","L":"'$TTS_SUBJECT_LOCATION'","O":"'$TTS_SUBJECT_ORGANIZATION'"}]}' > cert.json
+    cfssl gencert -hostname "$TTS_DOMAIN,$IP_LAN,$IP_WAN" -ca ca.pem -ca-key ca-key.pem cert.json | cfssljson -bare cert
 
     cp ca.pem ${DATA_FOLDER}/ca.pem
     cp ca-key.pem ${DATA_FOLDER}/ca-key.pem
@@ -114,13 +117,15 @@ if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 fi
 
 # We populate the TC_TRUST and TC_URI for a possible Balena BasicStation service running on the same machine
-TC_TRUST=$(cat ${DATA_FOLDER}/ca.pem)
-TC_TRUST=${TC_TRUST//$'\n'/}
-balena_set_variable "TC_TRUST" "$TC_TRUST"
-balena_set_variable "TC_URI" "wss://$DOMAIN:8887"
+if [ "$BALENA_DEVICE_UUID" != "" ]; then
+    TC_TRUST=$(cat ${DATA_FOLDER}/ca.pem)
+    TC_TRUST=${TC_TRUST//$'\n'/}
+    balena_set_variable "TC_TRUST" "$TC_TRUST"
+    balena_set_variable "TC_URI" "wss://$TTS_DOMAIN:8887"
+fi
 
 # Initialization
-EXPECTED_SIGNATURE="$ADMIN_EMAIL $ADMIN_PASSWORD $CONSOLE_SECRET $DOMAIN"
+EXPECTED_SIGNATURE="$TTS_ADMIN_EMAIL $TTS_ADMIN_PASSWORD $TTS_CONSOLE_SECRET $TTS_DOMAIN"
 CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/database_signature 2> /dev/null)
 if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
@@ -130,8 +135,8 @@ if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 
         ttn-lw-stack -c ${CONFIG_FILE} is-db create-admin-user \
             --id admin \
-            --email "${ADMIN_EMAIL}" \
-            --password "${ADMIN_PASSWORD}"
+            --email "${TTS_ADMIN_EMAIL}" \
+            --password "${TTS_ADMIN_PASSWORD}"
         ttn-lw-stack -c ${CONFIG_FILE} is-db create-oauth-client \
             --id cli \
             --name "Command Line Interface" \
@@ -144,10 +149,10 @@ if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
             --id console \
             --name "Console" \
             --owner admin \
-            --secret "${CONSOLE_SECRET}" \
-            --redirect-uri "https://${DOMAIN}/console/oauth/callback" \
+            --secret "${TTS_CONSOLE_SECRET}" \
+            --redirect-uri "https://${TTS_DOMAIN}/console/oauth/callback" \
             --redirect-uri "/console/oauth/callback" \
-            --logout-redirect-uri "https://${DOMAIN}/console" \
+            --logout-redirect-uri "https://${TTS_DOMAIN}/console" \
             --logout-redirect-uri "/console"
 
         echo $EXPECTED_SIGNATURE > ${DATA_FOLDER}/database_signature

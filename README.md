@@ -55,12 +55,12 @@ The initial script performs a series of tasks, prior to boot the service. These 
   * Create oauth clients for the CLI and the console
 * Pupulate the TC_URI and TC_TRUST variables for other services to use
 
-Certificates are recreated if DOMAIN or any SUBJECT_* variable below changes.
-Database is reset if DOMAIN, ADMIN_EMAIL, ADMIN_PASSWORD or CONSOLE_SECRET change.
+Certificates are recreated if TTS_DOMAIN or any TTS_SUBJECT_* variable below changes.
+Database is reset if TTS_DOMAIN, TTS_ADMIN_EMAIL, TTS_ADMIN_PASSWORD or TTS_CONSOLE_SECRET change.
 
-### Configuring the DOMAIN
+### Configuring the TTS_DOMAIN
 
-In order to connect from a gateway service (even in the same device) with a BasicStation protocol you will need a proper domain name to generate the certificates. If you don't care about secure connections then using the LAN IP of the device as DOMAIN will work just fine. Anyway, **the service wont start until a DOMAIN is defined** for the device.
+In order to connect from a gateway service (even in the same device) with a BasicStation protocol you will need a proper domain name to generate the certificates. If you don't care about secure connections then using the LAN IP of the device as TTS_DOMAIN will work just fine. Anyway, **the service wont start until a TTS_DOMAIN is defined** for the device.
 
 There are a number of ways to define a domain name pointing to the device IP. 
 
@@ -70,7 +70,7 @@ There are a number of ways to define a domain name pointing to the device IP.
 echo "127.0.0.1 lns.ttn.cat" >> /etc/hosts
 ```
 
-2. Using a DNS in your LAN, like PiHole, dnsmask,... these will work great inside your LAN. Actually you should have a PiHole at home already. But this require an extra step since BalenaOS by default uses Google DNS servers (8.8.8.8). So you have to instruct it to use your local DNS server instead. You can do that by editing the `/mnt/boot/config.json` file in the Host adding this line (change the IP to match that of your DNS server):
+2. Using a DNS in your LAN, like PiHole, dnsmask,... these will work great inside your LAN. But this require an extra step since BalenaOS by default uses Google DNS servers (8.8.8.8). So you have to instruct it to use your local DNS server instead. You can do that by editing the `/mnt/boot/config.json` file in the Host adding this line (change the IP to match that of your DNS server):
 
 ```
 "dnsServers": "192.168.1.11"
@@ -82,7 +82,7 @@ You can also do it using the Balena CLI on the BalenaOS image you download. Some
 balena config write --type raspberrypi4-64 --drive <downloaded.img> dnsServers "<dns_server>"
 ```
 
-3. Using a third party service, like CloudFlare, for instance. If you are managing a domain from such a service you can just add an A register for a subdomain pointing to your local (or public) IP address.
+3. Using a third party service, like Cloudflare, for instance. If you are managing a domain from such a service you can just add an A register for a subdomain pointing to your local (or public) IP address.
 
 ```
 A lns.ttn.cat 192.168.1.25
@@ -98,23 +98,23 @@ Point your browser to the domain name you have defined before using HTTPS and us
 
 Variable Name | Value | Description | Default
 ------------ | ------------- | ------------- | -------------
-**SERVER_NAME** | `STRING` | Name of the server | The Things Stack
-**DOMAIN** | `STRING` | Domain | Empty by default, must be populated so the service can run
-**ADMIN_EMAIL** | `STRING` | Admin email | admin@thethings.example.com
-**NOREPLY_EMAIL** | `STRING` | Email used for communications | noreply@thethings.example.com
-**ADMIN_PASSWORD** | `STRING` | Admin password (change it here or in the admin profile) | changeme
-**CONSOLE_SECRET** | `STRING` | Console secret | console
-**DEVICE_CLAIMING_SECRET** | `STRING` | Device claiming secret | device_claiming
-**METRICS_PASSWORD** | `STRING` | Metrics password | metrics
-**PPROF_PASSWORD** | `STRING` | Profiling password | pprof
-**SMTP_HOST** | `STRING` | SMTP Server |  
-**SMTP_USER** | `STRING` | SMTP User |  
-**SMTP_PASS** | `STRING` | SMTP Password |  
-**SENDGRID_KEY** | `STRING` | Sendgrid API Key (SMTP_HOST has to be empty in order to use this) | 
-**SUBJECT_COUNTRY** | `STRING` | Self Certificate country code| ES
-**SUBJECT_STATE** | `STRING` | Self Certificate state | Catalunya
-**SUBJECT_LOCATION** | `STRING` | Self Certificate city | Barcelona
-**SUBJECT_ORGANIZATION** | `STRING` | Self Certificate organization | TTN Catalunya
+**TTS_SERVER_NAME** | `STRING` | Name of the server | The Things Stack
+**TTS_DOMAIN** | `STRING` | Domain | Empty by default, must be populated so the service can run
+**TTS_ADMIN_EMAIL** | `STRING` | Admin email | admin@thethings.example.com
+**TTS_NOREPLY_EMAIL** | `STRING` | Email used for communications | noreply@thethings.example.com
+**TTS_ADMIN_PASSWORD** | `STRING` | Admin password (change it here or in the admin profile) | changeme
+**TTS_CONSOLE_SECRET** | `STRING` | Console secret | console
+**TTS_DEVICE_CLAIMING_SECRET** | `STRING` | Device claiming secret | device_claiming
+**TTS_METRICS_PASSWORD** | `STRING` | Metrics password | metrics
+**TTS_PPROF_PASSWORD** | `STRING` | Profiling password | pprof
+**TTS_SMTP_HOST** | `STRING` | SMTP Server |  
+**TTS_SMTP_USER** | `STRING` | SMTP User |  
+**TTS_SMTP_PASS** | `STRING` | SMTP Password |  
+**TTS_SENDGRID_KEY** | `STRING` | Sendgrid API Key (SMTP_HOST has to be empty in order to use this) | 
+**TTS_SUBJECT_COUNTRY** | `STRING` | Self Certificate country code| ES
+**TTS_SUBJECT_STATE** | `STRING` | Self Certificate state | Catalunya
+**TTS_SUBJECT_LOCATION** | `STRING` | Self Certificate city | Barcelona
+**TTS_SUBJECT_ORGANIZATION** | `STRING` | Self Certificate organization | TTN Catalunya
 
 ### Add a gateway service with Balena BasicStation
 
@@ -129,10 +129,11 @@ Check each project documentation to properly configure them. Notice the `stack` 
 
 ## Troubleshooting
 
-* Self certificates are not working along with BasicStation unless the device has a domain. Give your Pi a static address and use a DNS to add a domain pointing to it. See the `Configure the DOMAIN` section above.
+* Self certificates are not working along with BasicStation unless the device has a domain. Give your Pi a static address and use a DNS to add a domain pointing to it. See the `Configure the TTS_DOMAIN` section above.
 
-* If the database fails to initialize the best way to force the start script to init it again is to change any of these variables: DOMAIN, ADMIN_EMAIL, ADMIN_PASSWORD or CONSOLE_SECRET.
+* If the database fails to initialize the best way to force the start script to init it again is to change any of these variables: TTS_DOMAIN, TTS_ADMIN_EMAIL, TTS_ADMIN_PASSWORD or TTS_CONSOLE_SECRET.
 
+* When the database is reconfigured (because you change any of the environment variables in the previous point) the passwords for the admin and the console are overwritten. So if you are logged in as admin you will have to logout and login again with the default password.
 
 ## TODO
 

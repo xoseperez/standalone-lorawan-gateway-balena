@@ -21,23 +21,23 @@ assets:
         https://github.com/xoseperez/balena-tts-lns/master/resources/logo_small.png
 data:
   applicationEnvironmentVariables:
-    - SERVER_NAME: The Things Stack
-    - DOMAIN: 
-    - ADMIN_EMAIL: admin@thethings.example.com
-    - NOREPLY_EMAIL: noreply@thethings.example.com
-    - ADMIN_PASSWORD: changeme
-    - CONSOLE_SECRET: console
-    - DEVICE_CLAIMING_SECRET: device_claiming
-    - METRICS_PASSWORD: metrics
-    - PPROF_PASSWORD: pprof
-    - SMTP_HOST: 
-    - SMTP_USER: 
-    - SMTP_PASS: 
-    - SENDGRID_KEY:
-    - SUBJECT_COUNTRY: ES
-    - SUBJECT_STATE: Catalunya
-    - SUBJECT_LOCATION: Barcelona
-    - SUBJECT_ORGANIZATION: TTN Catalunya
+    - TTS_SERVER_NAME: The Things Stack
+    - TTS_DOMAIN: 
+    - TTS_ADMIN_EMAIL: admin@thethings.example.com
+    - TTS_NOREPLY_EMAIL: noreply@thethings.example.com
+    - TTS_ADMIN_PASSWORD: changeme
+    - TTS_CONSOLE_SECRET: console
+    - TTS_DEVICE_CLAIMING_SECRET: device_claiming
+    - TTS_METRICS_PASSWORD: metrics
+    - TTS_PPROF_PASSWORD: pprof
+    - TTS_SMTP_HOST: 
+    - TTS_SMTP_USER: 
+    - TTS_SMTP_PASS: 
+    - TTS_SENDGRID_KEY:
+    - TTS_SUBJECT_COUNTRY: ES
+    - TTS_SUBJECT_STATE: Catalunya
+    - TTS_SUBJECT_LOCATION: Barcelona
+    - TTS_SUBJECT_ORGANIZATION: TTN Catalunya
   defaultDeviceType: raspberrypi3
   supportedDeviceTypes:
     - raspberrypi3
