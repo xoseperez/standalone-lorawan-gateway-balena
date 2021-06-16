@@ -40,17 +40,10 @@ if [ "$BALENA_DEVICE_UUID" != "" ]; then
 
 fi
 
-# Check configuration
-if [ "$TTS_DOMAIN" == "" ]
-then
-    echo -e "\033[91mERROR: Missing configuration, define TTS_DOMAIN variable.\033[0m"
-	sleep infinity
-fi
-
 # Get configuration
 CONFIG_FILE=/home/thethings/ttn-lw-stack-docker.yml
 DATA_FOLDER=/srv/data
-
+#TTS_DOMAIN=${TTS_DOMAIN:-lns.ttn.cat}
 TTS_SERVER_NAME=${TTS_SERVER_NAME:-The Things Stack}
 TTS_ADMIN_EMAIL=${TTS_ADMIN_EMAIL:-admin@thethings.example.com}
 TTS_NOREPLY_EMAIL=${TTS_NOREPLY_EMAIL:-noreply@thethings.example.com}
@@ -68,6 +61,13 @@ if [ ! $TTS_SMTP_HOST == "" ]; then
     MAIL_PROVIDER="smtp"
 else
     MAIL_PROVIDER="sendgrid"
+fi
+
+# Check configuration
+if [ "$TTS_DOMAIN" == "" ]
+then
+    echo -e "\033[91mERROR: Missing configuration, define TTS_DOMAIN variable.\033[0m"
+	sleep infinity
 fi
 
 # Build config file
@@ -89,6 +89,11 @@ sed -i -e "s/{{pprof_password}}/${TTS_PPROF_PASSWORD}/g" $CONFIG_FILE
 sed -i -e "s/{{device_claiming_secret}}/${TTS_DEVICE_CLAIMING_SECRET}/g" $CONFIG_FILE
 sed -i -e "s/{{data_folder}}/${DATA_FOLDER_ESC}/g" $CONFIG_FILE
 
+# Set the machine name to the domain name
+#curl -X PATCH --header "Content-Type:application/json" \
+#    --data '{"network": {"hostname": "'$TTS_DOMAIN'"}}' \
+#    "$BALENA_SUPERVISOR_ADDRESS/v1/device/host-config?apikey=$BALENA_SUPERVISOR_API_KEY"
+
 # Certificates are rebuild on subject change
 TTS_SUBJECT_COUNTRY=${TTS_SUBJECT_COUNTRY:-ES}
 TTS_SUBJECT_STATE=${TTS_SUBJECT_STATE:-Catalunya}
@@ -104,8 +109,8 @@ if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
     echo '{"CN":"'$TTS_SUBJECT_ORGANIZATION CA'","key":{"algo":"rsa","size":2048},"names":[{"C":"'$TTS_SUBJECT_COUNTRY'","ST":"'$TTS_SUBJECT_STATE'","L":"'$TTS_SUBJECT_LOCATION'","O":"'$TTS_SUBJECT_ORGANIZATION'"}]}' > ca.json
     cfssl genkey -initca ca.json | cfssljson -bare ca
 
-    echo '{"CN":"'$TTS_DOMAIN'","hosts":["'$TTS_DOMAIN'","'$(echo $IP_LAN | sed 's/,/\",\"/')'"],"key":{"algo":"rsa","size":2048},"names":[{"C":"'$TTS_SUBJECT_COUNTRY'","ST":"'$TTS_SUBJECT_STATE'","L":"'$TTS_SUBJECT_LOCATION'","O":"'$TTS_SUBJECT_ORGANIZATION'"}]}' > cert.json
-    cfssl gencert -hostname "$TTS_DOMAIN,$IP_LAN,$IP_WAN" -ca ca.pem -ca-key ca-key.pem cert.json | cfssljson -bare cert
+    echo '{"CN":"'$TTS_DOMAIN'","hosts":["'$TTS_DOMAIN'","localhost","'$(echo $IP_LAN | sed 's/,/\",\"/')'"],"key":{"algo":"rsa","size":2048},"names":[{"C":"'$TTS_SUBJECT_COUNTRY'","ST":"'$TTS_SUBJECT_STATE'","L":"'$TTS_SUBJECT_LOCATION'","O":"'$TTS_SUBJECT_ORGANIZATION'"}]}' > cert.json
+    cfssl gencert -hostname "$TTS_DOMAIN,localhost,$IP_LAN,$IP_WAN" -ca ca.pem -ca-key ca-key.pem cert.json | cfssljson -bare cert
 
     cp ca.pem ${DATA_FOLDER}/ca.pem
     cp ca-key.pem ${DATA_FOLDER}/ca-key.pem

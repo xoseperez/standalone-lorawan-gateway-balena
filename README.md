@@ -147,7 +147,7 @@ Check each project documentation to properly configure them. Notice the `stack` 
 ## TODO
 
 * Lots of testing :)
-* Testing performance on different platforms
+* Testing performance (# of devices) on different platforms
 * Option to use ACME / Let's Encrypt for valid certificates
 * Option to configure a connection to the Packet Broker
 * Include UDP packet forwarder (currently only compatible with SX1301 concentrators)
