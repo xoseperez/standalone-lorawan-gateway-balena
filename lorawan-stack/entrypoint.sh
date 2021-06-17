@@ -126,7 +126,7 @@ if [ "$BALENA_DEVICE_UUID" != "" ]; then
     TC_TRUST=$(cat ${DATA_FOLDER}/ca.pem)
     TC_TRUST=${TC_TRUST//$'\n'/}
     balena_set_variable "TC_TRUST" "$TC_TRUST"
-    balena_set_variable "TC_URI" "wss://$TTS_DOMAIN:8887"
+    balena_set_variable "TC_URI" "wss://localhost:8887"
 fi
 
 # Initialization
