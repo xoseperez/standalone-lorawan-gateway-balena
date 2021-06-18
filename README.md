@@ -21,12 +21,12 @@ This is a Work In Progress. It should work just fine for local (LAN) deployments
 
 ### Network
 
-Right now, the self-signed certificates will only work if you have a domain nme pointing to the device. To do so you will need:
+Even thou they are not necessary, you may want to have:
 
-* Configure a static IP for the device (either in the device itself or using a DHCP lease on your router)
-* Configure a domain (or a subdomain of a domain you already have) pointing to the device
+* a static IP for the device (either in the device itself or using a DHCP lease on your router)
+* a domain (or a subdomain of a domain you already have) pointing to the device
 
-Check the `Configuring the domain` section below for different options to fulfull these two requirements. Once all of this is ready, you are able to deploy this repository following instructions below.
+Check the `Configuring the domain` section below for different options to fulfull these two options.
 
 ## Deploy
 
@@ -65,11 +65,11 @@ git submodule update --init
 
 ## Boot process
 
-Now a special container in the device will be notified of the new services to download and install. This will take a few minutes and the services will reboot 2 or 3 times until configuration is complete. In the meantime you can configure the `TTS_DOMAIN` variable in the `Device variables` section in the Balena dashboard. A complete list of variables can be found be `Variables` section below, but this one is required. Set the `TTS_DOMAIN` variable to the domain you configured. The `stack` service won't boot if this variables is not defined.
+Now a special container in the device will be notified of the new services to download and install. This will take a few minutes and the services will reboot 2 or 3 times until configuration is complete. 
 
 ## Log in
 
-Point your browser to the domain name you have defined before using HTTPS and use the default credentials (admin/changeme) to log in as administrator.
+Point your browser to the first local IP of the device or to the domain name (if you have defined one) using HTTPS and use the default credentials (admin/changeme) to log in as administrator.
 
 Besides configuring the platform to your needs, if you are using a concentrator with a BasicStation services this is the time to create a gateway with the EUI de `basicstation` service provices in the logs and create a key for it.
 
@@ -90,13 +90,13 @@ The initial script performs a series of tasks, prior to boot the service. These 
 Certificates are recreated if TTS_DOMAIN or any TTS_SUBJECT_* variable below changes.
 Database is reset if TTS_DOMAIN, TTS_ADMIN_EMAIL, TTS_ADMIN_PASSWORD or TTS_CONSOLE_SECRET change.
 
-### Configuring the domain
+### Configuring the IP and domain
 
-In order to connect from a gateway service (even in the same device) with a BasicStation protocol you will need a proper domain name to generate the certificates. If you don't care about secure connections then using the LAN IP of the device as TTS_DOMAIN will work just fine. Anyway, **the service won't start until a TTS_DOMAIN is defined** for the device.
+You want to assign your device a fixed IP or a domain name where you can always reach it. Here you have a few clues on how to do it.
 
 #### Static IP
 
-To properly configure a domain or subdomain you will have to configure the Raspberry Pi with a static address. You have two options here:
+To reach the IP or to properly configure a domain or subdomain you will have to configure the Raspberry Pi with a static address. You have two options here:
 
 1. Configure a static lease on your home router linking the RPi MAC with an IP. Everytime the RPi boots it will ask for an IP using DHCP (this is the default) and router will allways gfive it the same IP.
 
@@ -104,7 +104,7 @@ To properly configure a domain or subdomain you will have to configure the Raspb
 
 #### Domain or subdomain
 
-Once you know the PI will always be accessible at the same IP, there are a number of ways to define a domain name or a subdomain pointing to the device IP. 
+Once you know the PI will always be accessible at the same IP, there are a number of ways to define a domain name or a subdomain pointing to the device IP. After doing any of these approaches change the TTS_DOMAIN environment variable accordingly so the stack service recreates the right certificates for the domain.
 
 1. Using a DNS in your LAN, like PiHole, dnsmask,... these will work great inside your LAN. But this option requires an extra step since BalenaOS by default uses Google DNS servers (8.8.8.8). So you have to instruct it to use your local DNS server instead. You can do that by editing the `/mnt/boot/config.json` file in the Host adding this line (change the IP to match that of your DNS server):
 
@@ -133,7 +133,7 @@ Then you just have to wait for the domain name to propagate.
 Variable Name | Value | Description | Default
 ------------ | ------------- | ------------- | -------------
 **TTS_SERVER_NAME** | `STRING` | Name of the server | The Things Stack
-**TTS_DOMAIN** | `STRING` | Domain | Empty by default, must be populated so the service can run
+**TTS_DOMAIN** | `STRING` | Domain | It will use the first local IP by default
 **TTS_ADMIN_EMAIL** | `STRING` | Admin email | admin@thethings.example.com
 **TTS_NOREPLY_EMAIL** | `STRING` | Email used for communications | noreply@thethings.example.com
 **TTS_ADMIN_PASSWORD** | `STRING` | Admin password (change it here or in the admin profile) | changeme
@@ -178,9 +178,9 @@ Notice the `stack` service will populate the `TC_URI` and `TC_TRUST` variables, 
 
 ## Troubleshooting
 
-* Self certificates are not working unless the device has a domain. Any help here would be much appreciated. Give your Pi a static address and use a DNS to add a domain pointing to it. See the `Configure the domain` section above.
+* If you are having certificates problems or "token rejected" message on the TTS website, try regenerating the credentials by changing any of the SUBJECT_* variables. You can also open a terminal to the `stack` service, delete the `/srv/data/certificates_signature` file and restart the stack service.
 
-* If the database fails to initialize the best way to force the start script to init it again is to change any of these variables: TTS_DOMAIN, TTS_ADMIN_EMAIL, TTS_ADMIN_PASSWORD or TTS_CONSOLE_SECRET.
+* If the database fails to initialize the best way to force the start script to init it again is to change any of these variables: TTS_ADMIN_EMAIL, TTS_ADMIN_PASSWORD or TTS_CONSOLE_SECRET. You can also open a terminal to the `stack` service, delete the `/srv/data/database_signature` file and restart the stack service.
 
 * When the database is reconfigured (because you change any of the environment variables in the previous point) the passwords for the admin and the console are overwritten. So if you are logged in as admin you will have to logout and login again with the default password.
 

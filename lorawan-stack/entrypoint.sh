@@ -1,49 +1,45 @@
 #!/bin/sh
 
-if [ "$BALENA_DEVICE_UUID" != "" ]; then
+# Get service coonfiguration
+RESPONSE=$(curl -sX GET "https://api.balena-cloud.com/v6/device?\$filter=uuid%20eq%20'$BALENA_DEVICE_UUID'" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer $BALENA_API_KEY")
+BALENA_ID=$(echo $RESPONSE | jq ".d | .[0] | .id")
+IP_LAN=$(echo $RESPONSE | jq ".d | .[0] | .ip_address" | sed 's/"//g' | sed 's/ /,/g')
+IP_WAN=$(echo $RESPONSE | jq ".d | .[0] | .public_address" | sed 's/"//g')
 
-    # Get service coonfiguration
-    RESPONSE=$(curl -sX GET "https://api.balena-cloud.com/v6/device?\$filter=uuid%20eq%20'$BALENA_DEVICE_UUID'" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $BALENA_API_KEY")
-    BALENA_ID=$(echo $RESPONSE | jq ".d | .[0] | .id")
-    IP_LAN=$(echo $RESPONSE | jq ".d | .[0] | .ip_address" | sed 's/"//g')
-    IP_WAN=$(echo $RESPONSE | jq ".d | .[0] | .public_address" | sed 's/"//g')
+# Utility function to create or update a device environment variables
+balena_set_variable() {
+    
+    NAME=$1
+    VALUE=$2
+    
+    ID=$(curl -sX GET "https://api.balena-cloud.com/v6/device_environment_variable" -H "Content-Type: application/json" -H "Authorization: Bearer $BALENA_API_KEY" | jq '.d | .[] | select(.name == "'$NAME'") | .id')
+    
+    if [ "$ID" == "" ]; then
 
-    # Utility function to create or update a device environment variables
-    balena_set_variable() {
-        
-        NAME=$1
-        VALUE=$2
-        
-        ID=$(curl -sX GET "https://api.balena-cloud.com/v6/device_environment_variable" -H "Content-Type: application/json" -H "Authorization: Bearer $BALENA_API_KEY" | jq '.d | .[] | select(.name == "'$NAME'") | .id')
-        
-        if [ "$ID" == "" ]; then
+        curl -sX POST \
+            "https://api.balena-cloud.com/v6/device_environment_variable" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $BALENA_API_KEY" \
+            --data "{\"device\": \"$BALENA_ID\",\"name\": \"$NAME\",\"value\": \"$VALUE\"}" 2> /dev/null
 
-            curl -sX POST \
-                "https://api.balena-cloud.com/v6/device_environment_variable" \
-                -H "Content-Type: application/json" \
-                -H "Authorization: Bearer $BALENA_API_KEY" \
-                --data "{\"device\": \"$BALENA_ID\",\"name\": \"$NAME\",\"value\": \"$VALUE\"}" 2> /dev/null
+    else
 
-        else
+        curl -X PATCH \
+            "https://api.balena-cloud.com/v6/device_environment_variable($ID)" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $BALENA_API_KEY" \
+            --data "{\"value\": \"$VALUE\"}" 2> /dev/null
 
-            curl -X PATCH \
-                "https://api.balena-cloud.com/v6/device_environment_variable($ID)" \
-                -H "Content-Type: application/json" \
-                -H "Authorization: Bearer $BALENA_API_KEY" \
-                --data "{\"value\": \"$VALUE\"}" 2> /dev/null
+    fi
 
-        fi
-
-    }
-
-fi
+}
 
 # Get configuration
 CONFIG_FILE=/home/thethings/ttn-lw-stack-docker.yml
 DATA_FOLDER=/srv/data
-#TTS_DOMAIN=${TTS_DOMAIN:-lns.ttn.cat}
+TTS_DOMAIN=${TTS_DOMAIN:-${IP_LAN%,*}}
 TTS_SERVER_NAME=${TTS_SERVER_NAME:-The Things Stack}
 TTS_ADMIN_EMAIL=${TTS_ADMIN_EMAIL:-admin@thethings.example.com}
 TTS_NOREPLY_EMAIL=${TTS_NOREPLY_EMAIL:-noreply@thethings.example.com}
@@ -54,7 +50,6 @@ TTS_METRICS_PASSWORD=${TTS_METRICS_PASSWORD:-metrics}
 TTS_PPROF_PASSWORD=${TTS_PPROF_PASSWORD:-pprof}
 
 DATA_FOLDER_ESC=$(echo "${DATA_FOLDER}" | sed 's/\//\\\//g')
-IP_LAN=$(echo $IP_LAN | sed 's/ /,/g')
 BLOCK_KEY=$(openssl rand -hex 32)
 HASH_KEY=$(openssl rand -hex 64)
 if [ ! $TTS_SMTP_HOST == "" ]; then
@@ -122,12 +117,10 @@ if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
 fi
 
 # We populate the TC_TRUST and TC_URI for a possible Balena BasicStation service running on the same machine
-if [ "$BALENA_DEVICE_UUID" != "" ]; then
-    TC_TRUST=$(cat ${DATA_FOLDER}/ca.pem)
-    TC_TRUST=${TC_TRUST//$'\n'/}
-    balena_set_variable "TC_TRUST" "$TC_TRUST"
-    balena_set_variable "TC_URI" "wss://localhost:8887"
-fi
+TC_TRUST=$(cat ${DATA_FOLDER}/ca.pem)
+TC_TRUST=${TC_TRUST//$'\n'/}
+balena_set_variable "TC_TRUST" "$TC_TRUST"
+balena_set_variable "TC_URI" "wss://localhost:8887"
 
 # Initialization
 EXPECTED_SIGNATURE="$TTS_ADMIN_EMAIL $TTS_ADMIN_PASSWORD $TTS_CONSOLE_SECRET $TTS_DOMAIN"
