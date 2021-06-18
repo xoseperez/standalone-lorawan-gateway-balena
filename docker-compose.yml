@@ -86,17 +86,17 @@ services:
   # ------------------------------------------------------------------------------------
   # git submodule add https://github.com/balenalabs/basicstation
   # ------------------------------------------------------------------------------------
-  basicstation:
-    build: ./basicstation
-    restart: unless-stopped
-    privileged: true
-    network_mode: host
-    labels:
-      io.balena.features.kernel-modules: '1'
-      io.balena.features.firmware: '1'
-      io.balena.features.dbus: '1'
-      io.balena.features.supervisor-api: '1'
-      io.balena.features.balena-api: '1'
+  #basicstation:
+  #  build: ./basicstation
+  #  restart: unless-stopped
+  #  privileged: true
+  #  network_mode: host
+  #  labels:
+  #    io.balena.features.kernel-modules: '1'
+  #    io.balena.features.firmware: '1'
+  #    io.balena.features.dbus: '1'
+  #    io.balena.features.supervisor-api: '1'
+  #    io.balena.features.balena-api: '1'
 
   # ------------------------------------------------------------------------------------
   # git submodule add https://github.com/AllWize/balena-legacy-packet-forwarder/
