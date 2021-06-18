@@ -58,13 +58,6 @@ else
     MAIL_PROVIDER="sendgrid"
 fi
 
-# Check configuration
-if [ "$TTS_DOMAIN" == "" ]
-then
-    echo -e "\033[91mERROR: Missing configuration, define TTS_DOMAIN variable.\033[0m"
-	sleep infinity
-fi
-
 # Build config file
 cp ${CONFIG_FILE}.template ${CONFIG_FILE}
 sed -i -e "s/{{server_name}}/${TTS_SERVER_NAME}/g" $CONFIG_FILE
@@ -122,7 +115,7 @@ TC_TRUST=${TC_TRUST//$'\n'/}
 balena_set_variable "TC_TRUST" "$TC_TRUST"
 balena_set_variable "TC_URI" "wss://localhost:8887"
 
-# Initialization
+# Database initialization
 EXPECTED_SIGNATURE="$TTS_ADMIN_EMAIL $TTS_ADMIN_PASSWORD $TTS_CONSOLE_SECRET $TTS_DOMAIN"
 CURRENT_SIGNATURE=$(cat ${DATA_FOLDER}/database_signature 2> /dev/null)
 if [ "$CURRENT_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
