@@ -1,7 +1,7 @@
 name: The Things Stack LNS
 type: sw.application
 description: >-
-  Deploys the The Things Stack LoRaWAN Network Server in localhost mode with serlf signed certificates.
+  Deploys the The Things Stack LoRaWAN Network Server alongside BasicStation Gateway Protocol.
 joinable: false
 post-provisioning: >-
   ## Usage instructions
