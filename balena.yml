@@ -22,7 +22,6 @@ assets:
 data:
   applicationEnvironmentVariables:
     - TTS_SERVER_NAME: The Things Stack
-    - TTS_DOMAIN: 
     - TTS_ADMIN_EMAIL: admin@thethings.example.com
     - TTS_NOREPLY_EMAIL: noreply@thethings.example.com
     - TTS_ADMIN_PASSWORD: changeme
