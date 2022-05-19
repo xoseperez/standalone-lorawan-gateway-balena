@@ -5,89 +5,84 @@ volumes:
   postgres:
   stack-blob:
   stack-data:
+  node-red-data:
+  grafana-data:
+  influxdb-data:
+  influxdb-etc:
 
 services:
 
   postgres:
-    image: postgres:11.12
+    image: postgres:14.3-alpine3.15
+    container_name: postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_PASSWORD=root
-      - POSTGRES_USER=root
-      - POSTGRES_DB=ttn_lorawan
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_USER=root
+        - POSTGRES_DB=ttn_lorawan
     volumes:
-      - 'postgres:/var/lib/postgresql/data'
+        - 'postgres:/var/lib/postgresql/data'
     ports:
-      - "127.0.0.1:5432:5432"
-    labels:
-      io.balena.features.kernel-modules: '1'
-      io.balena.features.firmware: '1'
-      io.balena.features.dbus: '1'
-      io.balena.features.supervisor-api: '1'
-      io.balena.features.balena-api: '1'
+        - "127.0.0.1:5432:5432"
     
   redis:
-    image: redis:6.2.4-alpine3.13
+    image: redis:7.0.0-alpine3.15
+    container_name: redis
     command: redis-server --appendonly yes
     restart: unless-stopped
     volumes:
-      - 'redis:/data'
+        - 'redis:/data'
     ports:
-      - "127.0.0.1:6379:6379"
-    labels:
-      io.balena.features.kernel-modules: '1'
-      io.balena.features.firmware: '1'
-      io.balena.features.dbus: '1'
-      io.balena.features.supervisor-api: '1'
-      io.balena.features.balena-api: '1'
+        - "127.0.0.1:6379:6379"
   
   stack:
-    build: ./lorawan-stack
+    image: xoseperez/the-things-stack:latest
+    container_name: stack
     restart: unless-stopped
     depends_on:
-      - redis
-      - postgres
+        - redis
+        - postgres
     volumes:
-      - 'stack-blob:/srv/ttn-lorawan/public/blob'
-      - 'stack-data:/srv/data'
+        - 'stack-blob:/srv/ttn-lorawan/public/blob'
+        - 'stack-data:/srv/data'
     environment:
-      TTN_LW_BLOB_LOCAL_DIRECTORY: /srv/ttn-lorawan/public/blob
-      TTN_LW_REDIS_ADDRESS: redis:6379
-      TTN_LW_IS_DATABASE_URI: postgres://root:root@postgres:5432/ttn_lorawan?sslmode=disable
+        TTN_LW_BLOB_LOCAL_DIRECTORY: /srv/ttn-lorawan/public/blob
+        TTN_LW_REDIS_ADDRESS: redis:6379
+        TTN_LW_IS_DATABASE_URI: postgres://root:root@postgres:5432/ttn_lorawan?sslmode=disable
+        WAIT_HOSTS: redis:6379, postgres:5432
+        WAIT_HOSTS_TIMEOUT: 300
+        WAIT_SLEEP_INTERVAL: 30
+        WAIT_HOST_CONNECT_TIMEOUT: 30
+    labels:
+        io.balena.features.balena-api: '1'
 
     ports:
     
-      - "80:1885"
-      - "443:8885"
+        - "80:1885"
+        - "443:8885"
     
-      - "1881:1881"
-      - "1882:1882"
-      - "1883:1883"
-      - "1884:1884"
-      - "1885:1885"
-      - "1887:1887"
+        - "1881:1881"
+        - "1882:1882"
+        - "1883:1883"
+        - "1884:1884"
+        - "1885:1885"
+        - "1887:1887"
     
-      - "8881:8881"
-      - "8882:8882"
-      - "8883:8883"
-      - "8884:8884"
-      - "8885:8885"
-      - "8887:8887"
+        - "8881:8881"
+        - "8882:8882"
+        - "8883:8883"
+        - "8884:8884"
+        - "8885:8885"
+        - "8887:8887"
     
-      - "1700:1700/udp"
+        - "1700:1700/udp"
     
-    labels:
-      io.balena.features.kernel-modules: '1'
-      io.balena.features.firmware: '1'
-      io.balena.features.dbus: '1'
-      io.balena.features.supervisor-api: '1'
-      io.balena.features.balena-api: '1'
-  
   # ------------------------------------------------------------------------------------
-  # git submodule add https://github.com/balenalabs/basicstation
+  # LoRa Basics™ Station Packet Forwarder
   # ------------------------------------------------------------------------------------
   basicstation:
-    build: ./basicstation
+    image: xoseperez/basicstation:latest
+    container_name: basicstation
     restart: unless-stopped
     privileged: true
     network_mode: host
@@ -99,10 +94,13 @@ services:
       io.balena.features.balena-api: '1'
 
   # ------------------------------------------------------------------------------------
-  # git submodule add https://github.com/AllWize/balena-legacy-packet-forwarder/
+  # Semtech Legacy UDP Packet Forwarder
+  # Alternative to the Basics™ Station Packet Forwarder, do not use both at the same time.
+  # This one is NOT recommended but still widely used and supported.
   # ------------------------------------------------------------------------------------
   #legacy:
-  #  build: ./balena-legacy-packet-forwarder
+  #  image: rakwireless/udp-packet-forwarder:latest
+  #  container_name: udp-packet-forwarder
   #  restart: unless-stopped
   #  privileged: true
   #  network_mode: host
@@ -114,14 +112,68 @@ services:
   #    io.balena.features.balena-api: '1'
 
   # ------------------------------------------------------------------------------------
-  # git submodule add https://github.com/balena-os/wifi-connect
+  # BalenaLabs WiFi-Connect
   # ------------------------------------------------------------------------------------
   #wifi-connect:
-  #  build: ./wifi-connect
+  #  image: balenablocks/wifi-connect:rpi
+  #  container_name: wifi-connect
   #  network_mode: "host"
   #  labels:
   #      io.balena.features.dbus: '1'
+  #      io.balena.features.firmware: '1'
   #  cap_add:
   #      - NET_ADMIN
   #  environment:
   #      DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/host/run/dbus/system_bus_socket"
+
+  # ------------------------------------------------------------------------------------
+  # Node-RED
+  # ------------------------------------------------------------------------------------
+  node-red:
+    image: bh.cr/balenablocks/balena-node-red
+    container_name: node-red
+    privileged: true
+    restart: unless-stopped
+    volumes:
+        - 'node-red-data:/data'
+    labels:
+        io.balena.features.dbus: '1'
+        io.balena.features.sysfs: '1'
+        io.balena.features.supervisor-api: '1'
+        io.balena.features.balena-api: '1'
+    ports:
+        - 1880:1880
+    environment:
+        PORT: 1880
+        USERNAME: "balena"
+        PASSWORD: "balena"
+        ENCRIPTION_KEY: "balena"        
+    cap_add:
+        - SYS_RAWIO
+    devices:
+        - "/dev/mem:/dev/mem"
+        - "/dev/gpiomem:/dev/gpiomem"
+        - "/dev/i2c-1:/dev/i2c-1"
+
+  # ------------------------------------------------------------------------------------
+  # Influxdb
+  # ------------------------------------------------------------------------------------
+  influxdb:
+    image: influxdb:1.7.11
+    container_name: influxdb
+    restart: unless-stopped
+    volumes:
+        - influxdb-data:/var/lib/influxdb
+        - influxdb-etc:/etc/influxdb
+
+  # ------------------------------------------------------------------------------------
+  # Grafana
+  # ------------------------------------------------------------------------------------
+  grafana:
+    image: balenablocks/dashboard
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+        - 3000:80
+    volumes:
+        - "grafana-data:/data"
