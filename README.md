@@ -17,8 +17,8 @@ Main features:
 
 Components used:
 
-* [Basics™ Station](https://github.com/xoseperez/basicstation).
 * [The Things Stack](https://github.com/xoseperez/the-things-stack-docker)
+* [Basics™ Station](https://github.com/xoseperez/basicstation)
 * [Node-RED](https://github.com/balenablocks/balena-node-red)
 * [InfluxDB](https://hub.docker.com/_/influxdb)
 * [Grafana](https://github.com/balenablocks/dashboard)

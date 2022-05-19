@@ -4,12 +4,17 @@ description: >-
   Deploys TTS Stack, BasicStation and other tools for a standalone LoraWAN network solution.
 joinable: false
 post-provisioning: >-
-  For detailed instructions on how to use configure your Standalon LoRaWAN gateway check out the [readme here](https://github.com/xoseperez/balena-tts-lns).
+  For detailed instructions on how to use configure your Standalon LoRaWAN gateway check out the [readme here](https://github.com/xoseperez/standalone-lorawan-gateway-balena).
 assets:
   repository:
     type: blob.asset
     data:
-      url: 'https://github.com/xoseperez/balena-tts-lns'
+      url: 'https://github.com/xoseperez/standalone-lorawan-gateway-balena'
+  logo:
+    type: blob.asset
+    data:
+      url: >-
+        https://raw.githubusercontent.com/xoseperez/standalone-lorawan-gateway-balena/master/ttncat_logo.png
 data:
   applicationEnvironmentVariables:
     - TTS_DOMAIN: 
