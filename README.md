@@ -73,4 +73,4 @@ The different services expose different ports, these are the default ports and c
 |The Things Stack|443 (https)|admin|changeme|
 |Node-RED|1880|balena|balena|
 |InfluxDB|8086|||
-|Grafana|3000|balena|balena|
+|Grafana|3000|admin|admin|
