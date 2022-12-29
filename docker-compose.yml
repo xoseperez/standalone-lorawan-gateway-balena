@@ -131,7 +131,7 @@ services:
   # Node-RED
   # ------------------------------------------------------------------------------------
   node-red:
-    image: bh.cr/balenablocks/balena-node-red
+    image: bh.cr/balenalabs/balena-node-red
     #build: ./node-red
     container_name: node-red
     privileged: true

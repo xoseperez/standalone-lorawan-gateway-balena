@@ -1,4 +1,4 @@
-FROM bh.cr/balenablocks/balena-node-red
+FROM bh.cr/balenalabs/balena-node-red
 
 # Copy package.json to the WORKDIR so npm builds all
 # of your added nodes modules for Node-RED
