@@ -19,7 +19,6 @@ data:
   applicationEnvironmentVariables:
     - TTS_DOMAIN: 
     - MODEL: RAK5146
-    - TC_KEY:
   defaultDeviceType: raspberrypi4-64
   supportedDeviceTypes:
     - raspberrypi3
@@ -29,4 +28,4 @@ data:
     - raspberrypicm4-ioboard
     - fincm3
     - generic
-
+version: 1.0.0

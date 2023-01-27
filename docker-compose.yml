@@ -81,36 +81,39 @@ services:
   # ------------------------------------------------------------------------------------
   # LoRa Basics™ Station Packet Forwarder
   # ------------------------------------------------------------------------------------
-  basicstation:
-    image: xoseperez/basicstation:latest
-    container_name: basicstation
+  #basicstation:
+  #  image: xoseperez/basicstation:latest
+  #  container_name: basicstation
+  #  restart: unless-stopped
+  #  privileged: true
+  #  network_mode: host
+  #  labels:
+  #      io.balena.features.kernel-modules: '1'
+  #      io.balena.features.firmware: '1'
+  #      io.balena.features.dbus: '1'
+  #      io.balena.features.supervisor-api: '1'
+  #      io.balena.features.balena-api: '1'
+
+  # ------------------------------------------------------------------------------------
+  # Semtech Legacy UDP Packet Forwarder
+  # Alternative to the Basics™ Station Packet Forwarder, do not use both at the same time.
+  # This one is NOT recommended but still widely used and supported and valid for standalone solutions.
+  # ------------------------------------------------------------------------------------
+  udp-packet-forwarder:
+    image: rakwireless/udp-packet-forwarder:latest
+    container_name: udp-packet-forwarder
     restart: unless-stopped
     privileged: true
     network_mode: host
+    environment:
+        SERVER_HOST: localhost
+        SERVER_PORT: 1700
     labels:
         io.balena.features.kernel-modules: '1'
         io.balena.features.firmware: '1'
         io.balena.features.dbus: '1'
         io.balena.features.supervisor-api: '1'
         io.balena.features.balena-api: '1'
-
-  # ------------------------------------------------------------------------------------
-  # Semtech Legacy UDP Packet Forwarder
-  # Alternative to the Basics™ Station Packet Forwarder, do not use both at the same time.
-  # This one is NOT recommended but still widely used and supported.
-  # ------------------------------------------------------------------------------------
-  #legacy:
-  #  image: rakwireless/udp-packet-forwarder:latest
-  #  container_name: udp-packet-forwarder
-  #  restart: unless-stopped
-  #  privileged: true
-  #  network_mode: host
-  #  labels:
-  #    io.balena.features.kernel-modules: '1'
-  #    io.balena.features.firmware: '1'
-  #    io.balena.features.dbus: '1'
-  #    io.balena.features.supervisor-api: '1'
-  #    io.balena.features.balena-api: '1'
 
   # ------------------------------------------------------------------------------------
   # BalenaLabs WiFi-Connect
@@ -132,7 +135,6 @@ services:
   # ------------------------------------------------------------------------------------
   node-red:
     image: bh.cr/balenalabs/balena-node-red
-    #build: ./node-red
     container_name: node-red
     privileged: true
     restart: unless-stopped
